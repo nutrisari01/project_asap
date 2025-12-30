@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoring Sensor Asap</title>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #1e1e2f;
+    color: white;
+}
+header, footer {
+    background: #111827;
+    text-align: center;
+    padding: 14px;
+}
+main {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+.card {
+    background: #2c2c44;
+    width: 100%;
+    max-width: 360px;
+    padding: 20px;
+    border-radius: 16px;
+    text-align: center;
+}
+.value {
+    font-size: 36px;
+    margin: 15px 0;
+}
+.status {
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+.aman { background: green; }
+.bahaya { background: red; }
+
+.control {
+    display: flex;
+    justify-content: space-between;
+}
+button {
+    width: 48%;
+    padding: 14px;
+    font-size: 18px;
+    border: none;
+    border-radius: 12px;
+    color: white;
+}
+.on { background: #16a34a; }
+.off { background: #dc2626; }
+</style>
+</head>
+
+<body>
+
+<header>🔥 Monitoring Sensor Asap</header>
+
+<main>
+<div class="card">
+    <h3>Nilai Sensor MQ-2</h3>
+    <div class="value" id="nilai">0</div>
+    <div class="status aman" id="status">AMAN</div>
+
+    <div class="control">
+        <button class="on" onclick="sendOn()">ON</button>
+        <button class="off" onclick="sendOff()">OFF</button>
+    </div>
+</div>
+</main>
+
+<footer>© 2025 | ESP32 MQTT Project</footer>
+
+<script>
+// ===== MQTT CONFIG =====
+const broker = "wss://broker.hivemq.com:8884/mqtt";
+const options = {
+    clientId: "web_" + Math.random().toString(16).substr(2, 8)
+};
+
+const client = mqtt.connect(broker, options);
+
+// ===== CONNECT =====
+client.on("connect", () => {
+    console.log("MQTT Connected");
+    client.subscribe("sensor/asap");
+    client.subscribe("sensor/status");
+});
+
+// ===== RECEIVE DATA =====
+client.on("message", (topic, message) => {
+    const msg = message.toString();
+
+    if (topic === "sensor/asap") {
+        document.getElementById("nilai").innerText = msg;
+    }
+
+    if (topic === "sensor/status") {
+        let status = document.getElementById("status");
+        status.innerText = msg;
+
+        if (msg === "BAHAYA") {
+            status.className = "status bahaya";
+        } else {
+            status.className = "status aman";
+        }
+    }
+});
+
+// ===== SEND CONTROL =====
+function sendOn() {
+    client.publish("sensor/control", "ON");
+}
+
+function sendOff() {
+    client.publish("sensor/control", "OFF");
+}
+</script>
+
+</body>
+</html>
