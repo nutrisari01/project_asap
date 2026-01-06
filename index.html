@@ -1,129 +1,182 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monitoring Sensor Asap</title>
+  <meta charset="UTF-8">
+  <title>MQ-2 GAMING MONITOR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <!-- MQTT.js -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-<style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #1e1e2f;
-    color: white;
-}
-header, footer {
-    background: #111827;
-    text-align: center;
-    padding: 14px;
-}
-main {
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-}
-.card {
-    background: #2c2c44;
-    width: 100%;
-    max-width: 360px;
-    padding: 20px;
-    border-radius: 16px;
-    text-align: center;
-}
-.value {
-    font-size: 36px;
-    margin: 15px 0;
-}
-.status {
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-.aman { background: green; }
-.bahaya { background: red; }
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-.control {
-    display: flex;
-    justify-content: space-between;
-}
-button {
-    width: 48%;
-    padding: 14px;
-    font-size: 18px;
-    border: none;
-    border-radius: 12px;
-    color: white;
-}
-.on { background: #16a34a; }
-.off { background: #dc2626; }
-</style>
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top, #00f5ff33, transparent 40%),
+        radial-gradient(circle at bottom, #ff005533, transparent 40%),
+        linear-gradient(160deg, #020617, #020617, #000);
+      color: #e5e7eb;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 14px;
+      text-align: center;
+      background: rgba(2, 6, 23, 0.85);
+      border-bottom: 1px solid #00f5ff55;
+      box-shadow: 0 0 15px #00f5ff44;
+      z-index: 10;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      padding: 10px;
+      text-align: center;
+      background: rgba(2, 6, 23, 0.85);
+      border-top: 1px solid #ff005555;
+      box-shadow: 0 0 15px #ff005544;
+      font-size: 13px;
+      z-index: 10;
+    }
+
+    main {
+      margin-top: 70px;
+      margin-bottom: 50px;
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.85);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      border: 1px solid #00f5ff44;
+      box-shadow:
+        0 0 10px #00f5ff22,
+        inset 0 0 10px #00f5ff11;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: #7dd3fc;
+      text-transform: uppercase;
+    }
+
+    #online {
+      font-weight: bold;
+      color: #22d3ee;
+    }
+
+    #nilai {
+      font-size: 46px;
+      text-align: center;
+      margin: 12px 0;
+      font-weight: bold;
+      color: #00f5ff;
+      text-shadow: 0 0 15px #00f5ff;
+    }
+
+    #status {
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .status-aman {
+      color: #22c55e;
+      text-shadow: 0 0 12px #22c55e;
+      font-weight: bold;
+    }
+
+    .status-bahaya {
+      color: #ef4444;
+      text-shadow: 0 0 12px #ef4444;
+      font-weight: bold;
+      animation: danger 1s infinite alternate;
+    }
+
+    @keyframes danger {
+      from { opacity: 1; }
+      to { opacity: 0.5; }
+    }
+  </style>
 </head>
 
 <body>
 
-<header>🔥 Monitoring Sensor Asap</header>
+<header>
+  <h3>🔥 MQ-2 CYBER MONITOR 🔥</h3>
+</header>
 
 <main>
-<div class="card">
-    <h3>Nilai Sensor MQ-2</h3>
-    <div class="value" id="nilai">0</div>
-    <div class="status aman" id="status">AMAN</div>
+  <div class="card">
+    <h3>Status ESP32</h3>
+    <p id="online">Menunggu...</p>
+  </div>
 
-    <div class="control">
-        <button class="on" onclick="sendOn()">ON</button>
-        <button class="off" onclick="sendOff()">OFF</button>
-    </div>
-</div>
+  <div class="card">
+    <h3>Nilai Sensor</h3>
+    <div id="nilai">0</div>
+  </div>
+
+  <div class="card">
+    <h3>Status Udara</h3>
+    <h2 id="status">-</h2>
+  </div>
 </main>
 
-<footer>© 2025 | ESP32 MQTT Project</footer>
+<footer>
+  ESP32 • MQTT • CYBER IOT
+</footer>
 
 <script>
-// ===== MQTT CONFIG =====
-const broker = "wss://broker.hivemq.com:8884/mqtt";
-const options = {
-    clientId: "web_" + Math.random().toString(16).substr(2, 8)
-};
+  const broker = "wss://broker.hivemq.com:8884/mqtt";
+  const client = mqtt.connect(broker);
 
-const client = mqtt.connect(broker, options);
+  client.on("connect", () => {
+    client.subscribe("esp32/mq2/nilai");
+    client.subscribe("esp32/mq2/status");
+    client.subscribe("esp32/mq2/online");
+  });
 
-// ===== CONNECT =====
-client.on("connect", () => {
-    console.log("MQTT Connected");
-    client.subscribe("sensor/asap");
-    client.subscribe("sensor/status");
-});
+  client.on("message", (topic, message) => {
+    const data = message.toString();
 
-// ===== RECEIVE DATA =====
-client.on("message", (topic, message) => {
-    const msg = message.toString();
-
-    if (topic === "sensor/asap") {
-        document.getElementById("nilai").innerText = msg;
+    if (topic === "esp32/mq2/nilai") {
+      document.getElementById("nilai").innerText = data;
     }
 
-    if (topic === "sensor/status") {
-        let status = document.getElementById("status");
-        status.innerText = msg;
+    if (topic === "esp32/mq2/status") {
+      const statusEl = document.getElementById("status");
+      statusEl.innerText = data;
 
-        if (msg === "BAHAYA") {
-            status.className = "status bahaya";
-        } else {
-            status.className = "status aman";
-        }
+      if (data.includes("ASAP")) {
+        statusEl.className = "status-bahaya";
+      } else {
+        statusEl.className = "status-aman";
+      }
     }
-});
 
-// ===== SEND CONTROL =====
-function sendOn() {
-    client.publish("sensor/control", "ON");
-}
-
-function sendOff() {
-    client.publish("sensor/control", "OFF");
-}
+    if (topic === "esp32/mq2/online") {
+      document.getElementById("online").innerText = data;
+    }
+  });
 </script>
 
 </body>
